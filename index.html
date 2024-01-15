@@ -7,30 +7,60 @@
   <title>My Web Component</title>
   <script src="https://unpkg.com/@antonz/runno/dist/runno.js"></script>
   <script src="ansi_to_html.js"></script>
+<style>
+body {
+	font-family: Verdana;
+	font-size: 12px;
+}
+</style>
 </head>
 <body>
-  <textarea id="script">
+	Try:
+  <button onclick="sample_r2()">r2 example</button>
+  <button onclick="sample_r2js()">r2js example</button>
+  <br />
+  <br />
+  <div style="background-color:#808080;border-radius:3px;box-sizing:border-box;padding:5px">
+  <textarea id="script" style="font-family:monospace;background-color:black;color:white;box-sizing: border-box; width:98%;padding:5px;height:6em;margin:5px;border-radius:3px;resize:none">
 pd 2
 ?E Hello World
   </textarea>
+  <div style="text-align:left; margin:5px">
+  <button onclick="run_any()">Run</button>
+  <!--
   <button onclick="run_r2()">Run R2</button>
   <button onclick="run_js()">Run JS</button>
-<div id="shell" style="display:block;background-color:black;color:white;white-space:pre;font-family:monospace">
+  -->
+  </div>
+<div id="shell" style="overflow:scroll;margin:5px;display:block;background-color:black;border: 1px solid white;border-radius:3px;color:white;white-space:pre;font-family:monospace">
 </div>
+	</div>
 
   <script>
   const { WASI } = window.Runno;
-
-//...
   let script_name = "/script.r2";
-  let script_r2_js = `
-pd 2
-?E Hello World
-  `;
-  let script_r2 = `
-pd 2
-?E Hello World
-  `;
+  let script_r2_js = "";
+  let script_r2 = '';
+  function sample_r2() {
+		    script_name = "/script.r2";
+		    script_r2 = `?E Hello World
+pd 10
+ `
+	  const el = document.getElementById("script");
+		    el.value = script_r2;
+	    }
+  function sample_r2js() {
+		    script_name = "/script.r2.js";
+		    script_r2_js = `console.log(r2.cmd("x"));
+ `
+	  const el = document.getElementById("script");
+		    el.value = script_r2_js;
+	    }
+  function run_any() {
+    	div = document.getElementById("shell");
+    	div.innerHTML = 'Loading...';
+	  run_wasm();
+  }
   function run_js() {
 	  script_name = "/script.r2.js";
 	  const el = document.getElementById("script");
@@ -54,7 +84,7 @@ function run_wasm() {
     	div.innerHTML = '';
 const result = WASI.start(fetch("radare2.wasm?v=5.8.8"), {
     //args: ["radare2", "-qescr.color=0", "-i", script_name, "some-file.txt"],
-    args: ["radare2", "-i", script_name, "some-file.txt"],
+    args: ["radare2", "-qi", script_name, "some-file.txt"],
     env: { SOME_KEY: "some value" },
     stdout: (out) => {
     	div = document.getElementById("shell");
