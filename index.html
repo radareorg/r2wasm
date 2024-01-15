@@ -57,9 +57,17 @@ pd 10
 		    el.value = script_r2_js;
 	    }
   function run_any() {
-    	div = document.getElementById("shell");
+    	const div = document.getElementById("shell");
+	const el = document.getElementById("script");
+	if (script_name.indexOf("js") !== -1) {
+  		script_r2_js = el.value;
+	} else {
+  		script_r2 = el.value;
+	}
     	div.innerHTML = 'Loading...';
+		    setTimeout(() => {
 	  run_wasm();
+			      });
   }
   function run_js() {
 	  script_name = "/script.r2.js";
