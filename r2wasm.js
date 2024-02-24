@@ -18,7 +18,7 @@ function http(rootUrl) {
       const response = await fetch(rootUrl + path, { signal, ...options });
       if (response.status >= 200 && response.status < 300) {
         results = await _readBody(response)
-        return JSON.parse(results)
+        return results;
       } else {
         throw new Error(response.statusText)
       }
@@ -204,7 +204,7 @@ function run_r2() {
 }
 var convert = new Convert();
 const sync_fetch = true;
-
+let radare2_wasm = null;
 let radare2_wasm_async = function(){};
 
 function r2wasm_init() {
