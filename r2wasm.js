@@ -214,21 +214,25 @@ var r2wasm_cancel = function(){
 };
 
 async function r2wasm_init_async() {
-  const { get, cancel } = http("./");
-  r2wasm_cancel_async = cancel;
-  window.addEventListener('fetch-progress', (e) => {
-    r2wasm_progress(e.detail);
-  });
-  window.addEventListener('fetch-finished', (e) => {
-    const detail = {received:100,length:100,loading:false};
-    r2wasm_progress(detail);
-  //  r2wasm_progress(e.detail);
- //    r2wasm_run(radare2_wasm);
-  });
-  // add this abortbutton somewhere
-  // abortbutton.addEventListener('click', cancel);
-  radare2_wasm = await get("radare2.wasm?v=5.8.8");
-  // should be fast because must be cached
+  try {
+    const { get, cancel } = http("./");
+    r2wasm_cancel_async = cancel;
+    window.addEventListener('fetch-progress', (e) => {
+      r2wasm_progress(e.detail);
+    });
+    window.addEventListener('fetch-finished', (e) => {
+      const detail = {received:100,length:100,loading:false};
+      r2wasm_progress(detail);
+    //  r2wasm_progress(e.detail);
+   //    r2wasm_run(radare2_wasm);
+    });
+    // add this abortbutton somewhere
+    // abortbutton.addEventListener('click', cancel);
+    radare2_wasm = await get("radare2.wasm?v=5.8.8");
+    // should be fast because must be cached
+  } catch (e) {
+    console.error(e);
+  }
   r2wasm_init ();
   return true;
 }
@@ -302,5 +306,6 @@ function r2wasm_run(id, language, script) {
         },
     },
 });
+r2wasm_init();
 }
 
