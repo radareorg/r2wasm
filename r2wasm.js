@@ -54,7 +54,6 @@ function http(rootUrl) {
         window.dispatchEvent(onProgress)
       }
     }
-
     // Concat the chinks into a single array
     let body = new Uint8Array(received);
     let position = 0;
@@ -65,8 +64,9 @@ function http(rootUrl) {
       position += chunk.length;
     }
 
+    loading = false;
     // Decode the response and return it
-    return new TextDecoder('utf-8').decode(body);
+    return body; // new TextDecoder('utf-8').decode(body);
   }
 
   const _resetLocals = () => {
@@ -138,13 +138,8 @@ class RadareProgressElement extends HTMLElement {
   }
   constructor() {
     super();
-    // this.attachShadow({ mode: 'open' });
-    // Create elements
     const wrapper = document.createElement('div');
-    // Style the elements
     wrapper.style.padding = '10px';
-    // Append elements to the shadow root
-    // this.shadowRoot.append(wrapper);
   }
 }
 window.customElements.define('r2-wasm-progress', RadareProgressElement);
@@ -181,7 +176,6 @@ function reset_any(id) {
 function run_any(id, language) {
   const div = document.getElementById("shell-"+id);
   const el = document.getElementById("script-"+id);
-  div.innerHTML = 'Loading...';
   r2wasm_run(id, language, el.value);
 }
 
@@ -190,7 +184,6 @@ function run_js() {
   const el = document.getElementById("script");
   script_r2_js = el.value;
   div = document.getElementById("shell");
-  div.innerHTML = 'Loading...';
   r2wasm_run();
 }
 
@@ -199,9 +192,9 @@ function run_r2() {
   const el = document.getElementById("script");
   script_r2 = el.value;
   div = document.getElementById("shell");
-  div.innerHTML = 'Loading...';
   r2wasm_run();
 }
+
 var convert = new Convert();
 const sync_fetch = true;
 let radare2_wasm = null;
@@ -227,12 +220,16 @@ async function r2wasm_init_async() {
     r2wasm_progress(e.detail);
   });
   window.addEventListener('fetch-finished', (e) => {
-    r2wasm_progress(e.detail);
+    const detail = {received:100,length:100,loading:false};
+    r2wasm_progress(detail);
+  //  r2wasm_progress(e.detail);
  //    r2wasm_run(radare2_wasm);
   });
   // add this abortbutton somewhere
   // abortbutton.addEventListener('click', cancel);
   radare2_wasm = await get("radare2.wasm?v=5.8.8");
+  // should be fast because must be cached
+  r2wasm_init ();
   return true;
 }
 
