@@ -10,24 +10,25 @@
   <script src="r2wasm.js"></script>
 <style>
 body {
-	font-family: Verdana;
-	font-size: 12px;
+  font-family: Verdana;
+  font-size: 12px;
 }
 </style>
 </head>
 <body style="background-color:black">
-	<center>
-	<div style="width:80%;background-color:orange;padding:2em;text-align:left;font-size:1em">
-	<h1>radare2 5.9.0 interactive changelog</h1>
-	<br /><br />
+  <center>
+  <div style="width:80%;background-color:orange;padding:2em;text-align:left;font-size:1em">
+  <h1>radare2 5.9.0 interactive changelog</h1>
+  <br /><br />
+  <r2-wasm-progress></r2-wasm-progress>
 This release comes with lots of interesting features, and you can learn from them by using this interactive shell
-	<br /><br />
+  <br /><br />
   <r2-wasm language="r2" script="?e hello world\npd 20"></r2-wasm>
-	<br /><br />
+  <br /><br />
 It is also possible to run javascript code
-	<br /><br />
+  <br /><br />
   <r2-wasm language="r2js" script="console.log('hello world')"></r2-wasm>
-	</div>
-	</center>
+  </div>
+  </center>
 </body>
 </html>
