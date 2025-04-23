@@ -145,7 +145,7 @@ function r2wasm_init() {
   loading = true;
   radare2_wasm = fetch("radare2.wasm?v=5.8.8");
   const detail = { received: 100, length: 100, loading: false };
-  r2wasm_progress(detail);
+  progress(detail);
   loading = false;
 }
 
@@ -162,12 +162,12 @@ export async function init_async() {
     const { get, cancel } = httpFetch("./");
     r2wasm_cancel_async = cancel;
     window.addEventListener("fetch-progress", (e) => {
-      r2wasm_progress(e.detail);
+      progress(e.detail);
     });
     window.addEventListener("fetch-finished", (e) => {
       const detail = { received: 100, length: 100, loading: false };
-      r2wasm_progress(detail);
-      // r2wasm_progress(e.detail);
+      progress(detail);
+      // progress(e.detail);
       // run(radare2_wasm);
     });
     // add this abortbutton somewhere
@@ -181,7 +181,7 @@ export async function init_async() {
   return true;
 }
 
-function r2wasm_progress(detail) {
+export function progress(detail) {
   const percent = 0 | ((detail.received * 100) / detail.length);
   const pc = document.getElementById("r2-wasm-progress");
   if (percent === 100) {
@@ -190,7 +190,7 @@ function r2wasm_progress(detail) {
   } else {
     pc.innerHTML =
       "<button onclick='r2wasm.cancel()'>cancel</button> <div style='border:2px solid black;background-color:grey;width:" +
-      percent + "px'> r2wasm(" + percent + "%)</div>";
+      percent + "px'> r2wasm.progress(" + percent + "%)</div>";
   }
 }
 

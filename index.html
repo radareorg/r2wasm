@@ -7,6 +7,7 @@
   <title>r2wasm</title>
   <script src="runno.js"></script>
   <script src="r2wasm.js"></script>
+  <script src="rasm2wasm.js"></script>
 <style>
 body {
   font-family: Verdana;
@@ -20,6 +21,7 @@ body {
   <h1>radare2 5.8.9 interactive changelog</h1>
   <br /><br />
   <r2-wasm-progress></r2-wasm-progress>
+  <rasm2-wasm-progress></rasm2-wasm-progress>
 This release comes with lots of interesting features, and you can learn from them by using this interactive shell
   <br /><br />
   <r2-wasm language="r2" script="?e hello world\npd 20"></r2-wasm>
@@ -27,7 +29,10 @@ This release comes with lots of interesting features, and you can learn from the
 It is also possible to run javascript code
   <br /><br />
   <r2-wasm language="r2js" script="console.log('hello world')"></r2-wasm>
+  <br /><br />
+  <rasm2-wasm arch="x86" bits="64" input="nop;mov rax,33"></rasm2-wasm>
   </div>
+
   </center>
 </body>
 </html>
