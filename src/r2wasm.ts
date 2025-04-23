@@ -53,8 +53,8 @@ class RadareProgressElement extends HTMLElement {
   connectedCallback() {
     globalId++;
     this.id = "r2-wasm-progress";
-    const htmlString =
-      "<div><button onclick='r2wasm.init_async()'>r2wasm.init()</button></div>";
+    const htmlString = "";
+    // "<div><button onclick='r2wasm.init_async()'>r2wasm.init()</button></div>";
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
     //this.shadowRoot.append(doc.body.firstChild);
@@ -113,7 +113,7 @@ export function reset_any(id) {
 export function run_any(id, language) {
   const div = document.getElementById("shell-" + id);
   const el = document.getElementById("script-" + id);
-  r2wasm_run(id, language, el.value);
+  run(id, language, el.value);
 }
 
 export function run_js() {
@@ -121,7 +121,7 @@ export function run_js() {
   const el = document.getElementById("script");
   script_r2_js = el.value;
   div = document.getElementById("shell");
-  r2wasm_run();
+  run();
 }
 
 export function run_r2() {
@@ -129,26 +129,33 @@ export function run_r2() {
   const el = document.getElementById("script");
   script_r2 = el.value;
   div = document.getElementById("shell");
-  r2wasm_run();
+  run();
 }
 
 const a2h = new Ansi2Html();
 let radare2_wasm = null;
 let radare2_wasm_async = function () {};
+let loading = false;
 
 function r2wasm_init() {
+  if (loading) {
+    // wait til loaded
+    return;
+  }
+  loading = true;
   radare2_wasm = fetch("radare2.wasm?v=5.8.8");
   const detail = { received: 100, length: 100, loading: false };
   r2wasm_progress(detail);
+  loading = false;
 }
 
-var r2wasm_cancel = function () {
+export function cancel() {
   r2wasm_cancel_async();
   const pc = document.getElementById("r2-wasm-progress");
-  const htmlString =
-    "<div><button onclick='r2wasm.init_async()'>r2wasm.init()</button></div>";
+  const htmlString = "";
+  // "<div><button onclick='r2wasm.init_async()'>r2wasm.init()</button></div>";
   pc.innerHTML = htmlString;
-};
+}
 
 export async function init_async() {
   try {
@@ -160,8 +167,8 @@ export async function init_async() {
     window.addEventListener("fetch-finished", (e) => {
       const detail = { received: 100, length: 100, loading: false };
       r2wasm_progress(detail);
-      //  r2wasm_progress(e.detail);
-      //    r2wasm_run(radare2_wasm);
+      // r2wasm_progress(e.detail);
+      // run(radare2_wasm);
     });
     // add this abortbutton somewhere
     // abortbutton.addEventListener('click', cancel);
@@ -182,16 +189,14 @@ function r2wasm_progress(detail) {
     pc.innerHTML = "";
   } else {
     pc.innerHTML =
-      "<button onclick='r2wasm_cancel()'>cancel</button> <div style='border:2px solid black;background-color:grey;width:" +
+      "<button onclick='r2wasm.cancel()'>cancel</button> <div style='border:2px solid black;background-color:grey;width:" +
       percent + "px'> r2wasm(" + percent + "%)</div>";
   }
 }
 
-function r2wasm_run(id, language, script) {
+export async function run(id, language, script) {
   if (radare2_wasm == null) {
-    alert("call r2wasm_init fore r2wasm_run");
-    return;
-    //
+    await init_async();
   }
   div = document.getElementById("shell-" + id);
   div.innerHTML = "";
