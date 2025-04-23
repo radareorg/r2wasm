@@ -11,10 +11,16 @@ class RasmElement extends HTMLElement {
   connectedCallback() {
     globalId++;
     this.id = "rasm2id" + globalId;
-    const language = this.getAttribute("language");
     const arch = this.getAttribute("arch");
     const bits = this.getAttribute("bits");
-    const input = this.getAttribute("input");
+    let code = this.getAttribute("code");
+    if (!code) {
+      code = "";
+    }
+    let data = this.getAttribute("data");
+    if (!data) {
+      data = "";
+    }
     let cpu = this.getAttribute("cpu");
     if (!cpu) {
       cpu = "";
@@ -24,16 +30,29 @@ class RasmElement extends HTMLElement {
       addr = "0";
     }
     const htmlString = `
-  <div style="background-color:#808080;border-radius:5px;box-sizing:border-box;padding:5px">
-  <textarea id="rasm2-input-` + this.id +
+  <div style="background-color:#808080;border-radius:5px;padding:5px">
+  <table style="width:100%"><tr><td>
+  <textarea id="rasm2-code-` + this.id +
       `" style="font-family:monospace;background-color:black;color:white;box-sizing:border-box;width:98%;padding:5px;height:6em;margin:5px;border-radius:5px;resize:none">` +
-      input + `</textarea>
-  <div id="rasm2-orig-` + this.id + `" style="visibility:hidden">` + input +
+      code + `</textarea>
+      </td><td>
+  <textarea id="rasm2-data-` + this.id +
+      `" style="font-family:monospace;background-color:black;color:white;box-sizing:border-box;width:98%;padding:5px;height:6em;margin:5px;border-radius:5px;resize:none">` +
+      data + `</textarea>
+      </td></tr>
+      <tr><td>
+  <select id="rasm2-archs-` + this.id + `"></select>
+  <select id="rasm2-bits-` + this.id + `">
+  <option value="64">64</option>
+  <option value="32">32</option>
+  <option value="16">16</option>
+  </select>
+      </td></tr>
+      </table>
+  <div id="rasm2-orig-` + this.id + `" style="visibility:hidden">` + code +
       `</div>
   <div style="text-align:left; margin:5px">
   <div id="rasm2-arch-` + this.id + `" style="visibility:hidden">` + arch +
-      `</div>
-  <div id="rasm2-bits-` + this.id + `" style="visibility:hidden">` + bits +
       `</div>
   <div id="rasm2-addr-` + this.id + `" style="visibility:hidden">` + addr +
       `</div>
@@ -45,10 +64,7 @@ class RasmElement extends HTMLElement {
   <button onclick="rasm2wasm.listArchs('` + this.id + `')">Archs</button>
   <button onclick="rasm2wasm.reset('` + this.id + `')">Reset</button>
   </div>
-<div id="rasm2-shell-` + this.id +
-      `" style="overflow:scroll;margin:5px;display:block;background-color:black;border-radius:5px;color:white;white-space:pre;font-family:monospace"></div>
-  </div>
-   `;
+  `;
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
     //this.shadowRoot.append(doc.body.firstChild);
@@ -100,8 +116,10 @@ export function reset(id) {
   const div = document.getElementById("rasm2-shell-" + id);
   div.innerHTML = "";
   const orig = document.getElementById("rasm2-orig-" + id);
-  const input = document.getElementById("rasm2-input-" + id);
-  input.value = orig.innerHTML;
+  const code = document.getElementById("rasm2-code-" + id);
+  code.value = orig.innerHTML;
+  const data = document.getElementById("rasm2-data-" + id);
+  data.value = "";
 }
 
 let rasm2_wasm = null;
@@ -142,7 +160,7 @@ export async function init_async() {
     });
     // add this abortbutton somewhere
     // abortbutton.addEventListener('click', cancel);
-    rasm2_wasm = await get("radare2.wasm?v=5.8.8");
+    rasm2_wasm = await get("rasm2.wasm?v=5.8.8");
     // should be fast because must be cached
   } catch (e) {
     console.error(e);
@@ -168,33 +186,40 @@ export async function listArchs(id) {
   if (rasm2_wasm == null) {
     await init_async();
   }
-  div = document.getElementById("rasm2-shell-" + id);
-  div.innerHTML = "";
 
   const result = WASI.start(rasm2_wasm, {
-    args: ["rasm2", "-L"],
+    args: ["rasm2", "-Lq"],
     env: { SOME_KEY: "some value" },
     stdout: (out) => {
-      div.innerHTML += out;
+      let d = "";
+      //      alert(out);
+      for (let o of out.trim().split("\n")) {
+        d += '<option value="' + o + '">' + o + "</option>\n";
+      }
+      document.getElementById("rasm2-archs-" + id).innerHTML = d;
     },
     stderr: (err) => {
-      console.error("stderr", err), div.innerHTML += err;
+      console.error("stderr", err);
+      div.innerHTML = err;
     },
   });
-  rasm2wasm_init();
 }
 
 export async function assemble(id) {
   if (rasm2_wasm == null) {
     await init_async();
   }
-  div = document.getElementById("rasm2-shell-" + id);
-  div.innerHTML = "";
   let arch = document.getElementById("rasm2-arch-" + id).innerHTML;
-  let bits = document.getElementById("rasm2-bits-" + id).innerHTML;
+  let bits = document.getElementById("rasm2-bits-" + id).value;
   let addr = document.getElementById("rasm2-addr-" + id).innerHTML;
   let cpu = document.getElementById("rasm2-cpu-" + id).innerHTML;
-  let input = document.getElementById("rasm2-input-" + id).value;
+  let input = document.getElementById("rasm2-code-" + id).value;
+  let output = document.getElementById("rasm2-data-" + id);
+
+  let curArch = document.getElementById("rasm2-archs-" + id).value;
+  if (curArch) {
+    arch = curArch;
+  }
 
   if (!bits) {
     bits = 64;
@@ -208,14 +233,17 @@ export async function assemble(id) {
   } else {
     args = ["rasm2", "-a", arch, "-b", bits, "-s", addr, input];
   }
+  output.value = "";
+  const shell = document.getElementById("rasm2-shell-" + id);
   const result = WASI.start(rasm2_wasm, {
     args: args,
     env: { SOME_KEY: "some value" },
     stdout: (out) => {
-      div.innerHTML += out;
+      output.value += out;
     },
     stderr: (err) => {
-      console.error("stderr", err), div.innerHTML += err;
+      console.error("stderr", err);
+      shell.value += err;
     },
   });
   rasm2wasm_init();
@@ -224,14 +252,18 @@ export async function disassemble(id) {
   if (rasm2_wasm == null) {
     await init_async();
   }
-  div = document.getElementById("rasm2-shell-" + id);
-  div.innerHTML = "";
   let arch = document.getElementById("rasm2-arch-" + id).innerHTML;
-  let bits = document.getElementById("rasm2-bits-" + id).innerHTML;
+  let bits = document.getElementById("rasm2-bits-" + id).value;
   let addr = document.getElementById("rasm2-addr-" + id).innerHTML;
   let cpu = document.getElementById("rasm2-cpu-" + id).innerHTML;
-  let input = document.getElementById("rasm2-input-" + id).value;
+  let input = document.getElementById("rasm2-data-" + id).value;
+  let output = document.getElementById("rasm2-code-" + id);
+  let shell = document.getElementById("rasm2-shell-" + id);
 
+  let curArch = document.getElementById("rasm2-archs-" + id).value;
+  if (curArch) {
+    arch = curArch;
+  }
   if (!bits) {
     bits = 64;
   }
@@ -250,20 +282,21 @@ export async function disassemble(id) {
       cpu,
       "-s",
       addr,
-      "-D",
+      "-d",
       input,
     ];
   } else {
-    args = ["rasm2", "-a", arch, "-b", bits, "-s", addr, "-D", input];
+    args = ["rasm2", "-a", arch, "-b", bits, "-s", addr, "-d", input];
   }
   const result = WASI.start(rasm2_wasm, {
     args: args,
     env: { SOME_KEY: "some value" },
     stdout: (out) => {
-      div.innerHTML += out;
+      output.value = out;
     },
     stderr: (err) => {
-      console.error("stderr", err), div.innerHTML += err;
+      console.error("stderr", err);
+      document.getElementById("rasm2-shell-" + id).value = err;
     },
   });
   rasm2wasm_init();
