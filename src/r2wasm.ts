@@ -143,7 +143,7 @@ function r2wasm_init() {
     return;
   }
   loading = true;
-  radare2_wasm = fetch("radare2.wasm?v=5.8.8");
+  radare2_wasm = fetch("radare2.wasm?v=5.9.8");
   const detail = { received: 100, length: 100, loading: false };
   progress(detail);
   loading = false;
@@ -213,7 +213,7 @@ export async function run(id, language, script) {
       /// console.log("stdout", out),
     },
     stderr: (err) => {
-      console.error("stderr", err), div.innerHTML += out;
+      console.error("stderr", err), div.innerHTML += err;
     },
     /// stdin: () => prompt("stdin:"),
     fs: {
