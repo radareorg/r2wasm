@@ -1,96 +1,7 @@
 // async fetch with progress
 
-import * as ansi2html from "./ansi2html.ts";
-
-function http(rootUrl: string) {
-  let loading = false;
-
-  let chunks: Uint8Array[] = [];
-  let results: Uint8Array | null = null;
-  let error = null;
-
-  let controller: AbortController | null = null;
-
-  const get = async (path, options) => {
-    _resetLocals();
-    if (!controller) {
-      controller = new AbortController();
-    }
-    let signal = controller.signal;
-    loading = true;
-
-    try {
-      const response = await fetch(rootUrl + path, { signal, ...options });
-      if (response.status >= 200 && response.status < 300) {
-        results = await _readBody(response);
-        return results;
-      } else {
-        throw new Error(response.statusText);
-      }
-    } catch (err) {
-      error = err;
-      results = null;
-      return error;
-    } finally {
-      loading = false;
-    }
-  };
-
-  const _readBody = async (response: Response): Promise<Uint8Array> => {
-    const reader = response.body!.getReader();
-    const length: number = +response.headers.get("content-length")!;
-    let received: number = 0;
-
-    // Loop through the response stream and extract data chunks
-    while (loading) {
-      const { done, value }: ReadableStreamReadResult<Uint8Array> = await reader
-        .read();
-      const payload = { detail: { received, length, loading } };
-      const onProgress = new CustomEvent("fetch-progress", payload);
-      const onFinished = new CustomEvent("fetch-finished", payload);
-
-      if (done) {
-        loading = false;
-        window.dispatchEvent(onFinished);
-      } else {
-        chunks.push(value);
-        received += value.length;
-        window.dispatchEvent(onProgress);
-      }
-    }
-    // Concat the chinks into a single array
-    let body = new Uint8Array(received);
-    let position = 0;
-
-    // Order the chunks by their respective position
-    for (let chunk of chunks) {
-      body.set(chunk, position);
-      position += chunk.length;
-    }
-
-    loading = false;
-    // Decode the response and return it
-    return body; // new TextDecoder('utf-8').decode(body);
-  };
-  const _resetLocals = () => {
-    loading = false;
-
-    chunks = [];
-    results = null;
-    error = null;
-
-    controller = new AbortController();
-  };
-
-  const cancel = () => {
-    _resetLocals();
-    if (controller) {
-      controller.abort();
-    }
-  };
-
-  return { get, cancel };
-}
+import { Ansi2Html } from "./ansi2html.ts";
+import { httpFetch } from "./httpfetch.ts";
 
 /// r2wasm widget
 
@@ -112,7 +23,7 @@ class RadareElement extends HTMLElement {
   <div style="text-align:left; margin:5px">
   <button onclick="r2wasm.run_any('` + this.id + `', '` + language +
       `')">Run</button>
-  <button onclick="reset_any('` + this.id + `')">Reset</button>
+  <button onclick="r2wasm.reset_any('` + this.id + `')">Reset</button>
   </div>
 <div id="shell-` + this.id +
       `" style="overflow:scroll;margin:5px;display:block;background-color:black;border-radius:5px;color:white;white-space:pre;font-family:monospace"></div>
@@ -143,7 +54,7 @@ class RadareProgressElement extends HTMLElement {
     globalId++;
     this.id = "r2-wasm-progress";
     const htmlString =
-      "<div><button onclick='r2wasm.r2wasm_init_async()'>r2wasm.init()</button></div>";
+      "<div><button onclick='r2wasm.init_async()'>r2wasm.init()</button></div>";
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
     //this.shadowRoot.append(doc.body.firstChild);
@@ -168,6 +79,7 @@ let script_name = "/script.r2";
 let script_r2_js = "";
 let script_r2 = "";
 
+/*
 function sample_r2() {
   script_name = "/script.r2";
   script_r2 = `?E Hello World
@@ -188,8 +100,9 @@ function sample_r2js() {
     el.value = script_r2_js;
   }
 }
+*/
 
-function reset_any(id) {
+export function reset_any(id) {
   const div = document.getElementById("shell-" + id);
   div.innerHTML = "";
   const orig = document.getElementById("orig-" + id);
@@ -219,8 +132,7 @@ export function run_r2() {
   r2wasm_run();
 }
 
-var convert = new ansi2html.Convert();
-const sync_fetch = true;
+const a2h = new Ansi2Html();
 let radare2_wasm = null;
 let radare2_wasm_async = function () {};
 
@@ -234,13 +146,13 @@ var r2wasm_cancel = function () {
   r2wasm_cancel_async();
   const pc = document.getElementById("r2-wasm-progress");
   const htmlString =
-    "<div><button onclick='r2wasm_init_async()'>r2wasm.init()</button></div>";
+    "<div><button onclick='r2wasm.init_async()'>r2wasm.init()</button></div>";
   pc.innerHTML = htmlString;
 };
 
-export async function r2wasm_init_async() {
+export async function init_async() {
   try {
-    const { get, cancel } = http("./");
+    const { get, cancel } = httpFetch("./");
     r2wasm_cancel_async = cancel;
     window.addEventListener("fetch-progress", (e) => {
       r2wasm_progress(e.detail);
@@ -292,7 +204,7 @@ function r2wasm_run(id, language, script) {
     args: ["radare2", "-qi", script_name, "some-file.txt"],
     env: { SOME_KEY: "some value" },
     stdout: (out) => {
-      div.innerHTML += convert.toHtml(out);
+      div.innerHTML += a2h.toHtml(out);
       /// console.log("stdout", out),
     },
     stderr: (err) => {

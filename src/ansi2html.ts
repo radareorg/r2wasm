@@ -496,7 +496,7 @@ function updateStickyStack(stickyStack, token, data) {
   return stickyStack;
 }
 
-export class Convert {
+export class Ansi2Html {
   /**
    * @param {object} options
    * @param {string=} options.fg The default foreground color used when reset color codes are encountered.
