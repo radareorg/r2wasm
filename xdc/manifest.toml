@@ -1,0 +1,3 @@
+name = "rasm2"
+description = "Assemble and disassemble with rasm2"
+version = "0.0.1"
